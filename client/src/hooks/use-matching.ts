@@ -12,13 +12,13 @@ export function useMatching() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    // Create WebSocket connection only once
-    if (!socketRef.current) {
+    // Function to set up WebSocket
+    const setupWebSocket = () => {
       // Get the host from the current location
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
       // Connect to our specific WebSocket path
-      const socket = new WebSocket(`${wsProtocol}//${host}/ws/whisper`);
+      const socket = new WebSocket(`${wsProtocol}//${host}/ws`);
       
       socketRef.current = socket;
       
@@ -30,10 +30,13 @@ export function useMatching() {
       socket.addEventListener('message', (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log('WebSocket message received:', data);
           
           switch (data.type) {
             case 'connection':
               setSocketId(data.socketId);
+              // Store socket ID in session storage for WebRTC
+              sessionStorage.setItem('socketId', data.socketId);
               break;
               
             case 'waiting':
@@ -44,11 +47,28 @@ export function useMatching() {
             case 'matched':
               setConnectionStatus('matched');
               setRoomName(data.roomName);
+              // Store the other user's ID for WebRTC
+              sessionStorage.setItem('otherUserId', data.otherUserId);
+              break;
+              
+            case 'webrtc-signal':
+              // Handle WebRTC signaling
+              const rtcSignalEvent = new CustomEvent('webrtc-signal', { 
+                detail: { 
+                  signal: data.signal,
+                  fromUser: data.fromUser
+                } 
+              });
+              window.dispatchEvent(rtcSignalEvent);
               break;
               
             case 'callEnded':
               // The other person ended the call
               window.location.href = '/';
+              break;
+              
+            case 'error':
+              console.error('Server error:', data.message);
               break;
           }
         } catch (error) {
@@ -56,23 +76,40 @@ export function useMatching() {
         }
       });
       
-      socket.addEventListener('close', () => {
-        console.log('WebSocket connection closed');
+      socket.addEventListener('close', (event) => {
+        console.log('WebSocket connection closed with code:', event.code);
         setConnectionStatus('disconnected');
         socketRef.current = null;
+        
+        // Attempt to reconnect after a delay, unless this was an intentional close
+        if (event.code !== 1000) {
+          console.log('Attempting to reconnect...');
+          setTimeout(setupWebSocket, 2000);
+        }
       });
       
       socket.addEventListener('error', (error) => {
         console.error('WebSocket error:', error);
-        setConnectionStatus('disconnected');
-        socketRef.current = null;
+        // Don't set disconnected here, the close event will fire after this
       });
+    };
+    
+    // Create WebSocket connection only once
+    if (!socketRef.current) {
+      setupWebSocket();
     }
     
     // Clean up on unmount
     return () => {
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        socketRef.current.close();
+      if (socketRef.current) {
+        if (socketRef.current.readyState === WebSocket.OPEN || 
+            socketRef.current.readyState === WebSocket.CONNECTING) {
+          // Send a leave message before closing
+          if (socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({ type: 'leave' }));
+          }
+          socketRef.current.close(1000); // Normal closure
+        }
         socketRef.current = null;
       }
     };
@@ -80,15 +117,29 @@ export function useMatching() {
 
   // Join matching queue with the selected mood
   const joinMatchingQueue = useCallback((mood: Mood) => {
+    // Always set the selected mood
+    setSelectedMood(mood);
+    
+    // Then join the queue only if we have a socket connection
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN && socketId) {
-      setSelectedMood(mood);
-      socketRef.current.send(JSON.stringify({
-        type: 'join',
-        mood
-      }));
+      console.log(`Joining queue with mood: ${mood}`);
+      
+      // First leave any existing queue
+      socketRef.current.send(JSON.stringify({ type: 'leave' }));
+      
+      // Short delay to ensure the leave command is processed
+      setTimeout(() => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({
+            type: 'join',
+            mood
+          }));
+        }
+      }, 200);
     } else {
       // If socket isn't ready yet, retry in a bit
-      setTimeout(() => joinMatchingQueue(mood), 500);
+      console.log('Socket not ready, retrying in 700ms...');
+      setTimeout(() => joinMatchingQueue(mood), 700);
     }
   }, [socketId]);
 

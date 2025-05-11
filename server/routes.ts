@@ -22,7 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create WebSocket server with a specific path to avoid conflicts with Vite's WebSocket
   const wss = new WebSocketServer({ 
     server: httpServer,
-    path: "/ws/whisper"
+    path: "/ws"
   });
   
   // Handle WebSocket connections
@@ -45,61 +45,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         switch (data.type) {
           case "join":
-            // Validate the mood
-            const mood = MoodEnum.parse(data.mood);
-            
-            // Create an active user
-            const activeUser = await storage.createActiveUser({
-              socketId: wsWithId.id,
-              mood,
-              userId: null,
-            });
-            
-            log(`User ${wsWithId.id} joined with mood: ${mood}`, "websocket");
-            
-            // Try to find a match
-            const potentialMatches = await storage.getActiveUsersByMood(mood);
-            
-            // If there's at least one other user with the same mood (not this user)
-            if (potentialMatches.length > 0 && potentialMatches[0].socketId !== wsWithId.id) {
-              const match = potentialMatches[0];
+            try {
+              // Validate the mood
+              const mood = MoodEnum.parse(data.mood);
               
-              // Create a unique room name
-              const roomName = `room_${nanoid(10)}`;
+              // First make sure this user leaves any existing queue/match
+              try {
+                // Check if user already exists
+                const existingUser = await storage.getActiveUser(wsWithId.id);
+                if (existingUser) {
+                  // Clean up any existing match
+                  const userMatch = await storage.getMatchByUserSocketId(wsWithId.id);
+                  
+                  if (userMatch) {
+                    const otherUserId = userMatch.user1Id === wsWithId.id ? userMatch.user2Id : userMatch.user1Id;
+                    // Set other user to unmatched
+                    await storage.updateActiveUserMatchStatus(otherUserId, false);
+                    // End match
+                    await storage.updateMatchEndTime(userMatch.id);
+                    
+                    // Notify other user if they're still connected
+                    const clients = Array.from(wss.clients) as WebSocketWithId[];
+                    const otherUserWs = clients.find(client => client.id === otherUserId);
+                    if (otherUserWs) {
+                      otherUserWs.send(JSON.stringify({ type: "callEnded" }));
+                    }
+                  }
+                  
+                  // Remove from active users
+                  await storage.removeActiveUser(wsWithId.id);
+                }
+              } catch (error) {
+                console.error("Error cleaning up existing user:", error);
+                // Continue anyway
+              }
               
-              // Create a match record
-              const newMatch = await storage.createMatch({
-                user1Id: wsWithId.id,
-                user2Id: match.socketId,
-                roomName,
+              // Create a new active user
+              const activeUser = await storage.createActiveUser({
+                socketId: wsWithId.id,
                 mood,
+                userId: null,
               });
               
-              // Update both users to be matched
-              await storage.updateActiveUserMatchStatus(wsWithId.id, true);
-              await storage.updateActiveUserMatchStatus(match.socketId, true);
+              log(`User ${wsWithId.id} joined with mood: ${mood}`, "websocket");
               
-              // Find the WebSocket for the other user - properly cast the clients array
-              const clients = Array.from(wss.clients) as WebSocketWithId[];
-              const otherUserWs = clients.find(client => client.id === match.socketId);
-              
-              // Send match info to both clients
-              if (otherUserWs) {
-                const matchData = {
-                  type: "matched",
-                  roomName,
-                  mood,
-                };
-                
-                wsWithId.send(JSON.stringify(matchData));
-                otherUserWs.send(JSON.stringify(matchData));
-                
-                log(`Matched users ${wsWithId.id} and ${match.socketId} in room ${roomName}`, "websocket");
-              }
-            } else {
-              // No match found, send waiting message
-              wsWithId.send(JSON.stringify({ type: "waiting", mood }));
-              log(`User ${wsWithId.id} waiting for match with mood: ${mood}`, "websocket");
+              // Try to find a match with a small delay to avoid race conditions
+              setTimeout(async () => {
+                try {
+                  // Fetch this user to make sure they're still active
+                  const currentUser = await storage.getActiveUser(wsWithId.id);
+                  if (!currentUser || currentUser.isMatched) {
+                    // User is no longer active or already matched
+                    return;
+                  }
+                  
+                  // Get all users with the same mood
+                  const potentialMatches = await storage.getActiveUsersByMood(mood);
+                  
+                  // Filter out users that are already matched and the current user
+                  const availableMatches = potentialMatches.filter(
+                    user => !user.isMatched && user.socketId !== wsWithId.id
+                  );
+                  
+                  // If there's at least one available user with the same mood
+                  if (availableMatches.length > 0) {
+                    const match = availableMatches[0];
+                    
+                    // Double-check the match is still available
+                    const matchUser = await storage.getActiveUser(match.socketId);
+                    if (!matchUser || matchUser.isMatched) {
+                      // Match is no longer available, send waiting message
+                      wsWithId.send(JSON.stringify({ type: "waiting", mood }));
+                      return;
+                    }
+                    
+                    // Create a unique room name
+                    const roomName = `room_${nanoid(10)}`;
+                    
+                    // Update both users to be matched first to prevent race conditions
+                    await storage.updateActiveUserMatchStatus(wsWithId.id, true);
+                    await storage.updateActiveUserMatchStatus(match.socketId, true);
+                    
+                    // Create a match record
+                    const newMatch = await storage.createMatch({
+                      user1Id: wsWithId.id,
+                      user2Id: match.socketId,
+                      roomName,
+                      mood,
+                    });
+                    
+                    // Find the WebSocket for the other user
+                    const clients = Array.from(wss.clients) as WebSocketWithId[];
+                    const otherUserWs = clients.find(client => client.id === match.socketId);
+                    
+                    // Send match info to both clients
+                    if (otherUserWs && otherUserWs.readyState === WebSocket.OPEN) {
+                      const matchData = {
+                        type: "matched",
+                        roomName,
+                        mood,
+                        otherUserId: match.socketId
+                      };
+                      
+                      const otherMatchData = {
+                        type: "matched",
+                        roomName,
+                        mood,
+                        otherUserId: wsWithId.id
+                      };
+                      
+                      wsWithId.send(JSON.stringify(matchData));
+                      otherUserWs.send(JSON.stringify(otherMatchData));
+                      
+                      log(`Matched users ${wsWithId.id} and ${match.socketId} in room ${roomName}`, "websocket");
+                    } else {
+                      // Other user's WebSocket not found or not open, mark them as unmatched
+                      await storage.updateActiveUserMatchStatus(match.socketId, false);
+                      await storage.updateActiveUserMatchStatus(wsWithId.id, false);
+                      
+                      // Send waiting message
+                      wsWithId.send(JSON.stringify({ type: "waiting", mood }));
+                      log(`Match's WebSocket not open, user ${wsWithId.id} is now waiting`, "websocket");
+                    }
+                  } else {
+                    // No match found, send waiting message
+                    wsWithId.send(JSON.stringify({ type: "waiting", mood }));
+                    log(`User ${wsWithId.id} waiting for match with mood: ${mood}`, "websocket");
+                  }
+                } catch (error) {
+                  console.error("Error finding match:", error);
+                  wsWithId.send(JSON.stringify({ type: "error", message: "Error finding match" }));
+                }
+              }, 300); // Short delay to avoid race conditions
+            } catch (error) {
+              console.error("Error processing join:", error);
+              wsWithId.send(JSON.stringify({ type: "error", message: "Invalid mood" }));
             }
             break;
             
@@ -144,143 +224,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     wsWithId.on("close", async () => {
       log(`WebSocket disconnected: ${wsWithId.id}`, "websocket");
       
-      // Handle the same cleanup as in the "leave" case
-      const userMatch = await storage.getMatchByUserSocketId(wsWithId.id);
-      
-      if (userMatch) {
-        const otherUserId = userMatch.user1Id === wsWithId.id ? userMatch.user2Id : userMatch.user1Id;
-        const clients = Array.from(wss.clients) as WebSocketWithId[];
-        const otherUserWs = clients.find(client => client.id === otherUserId);
+      try {
+        // Handle the same cleanup as in the "leave" case
+        const userMatch = await storage.getMatchByUserSocketId(wsWithId.id);
         
-        if (otherUserWs) {
-          otherUserWs.send(JSON.stringify({ type: "callEnded" }));
-          log(`Sent callEnded to user ${otherUserId} due to disconnect`, "websocket");
+        if (userMatch) {
+          const otherUserId = userMatch.user1Id === wsWithId.id ? userMatch.user2Id : userMatch.user1Id;
+          const clients = Array.from(wss.clients) as WebSocketWithId[];
+          const otherUserWs = clients.find(client => client.id === otherUserId);
+          
+          if (otherUserWs) {
+            otherUserWs.send(JSON.stringify({ type: "callEnded" }));
+            log(`Sent callEnded to user ${otherUserId} due to disconnect`, "websocket");
+          }
+          
+          await storage.updateMatchEndTime(userMatch.id);
+          await storage.updateActiveUserMatchStatus(otherUserId, false);
+          log(`Match ended due to disconnect: ${userMatch.id}`, "websocket");
         }
         
-        await storage.updateMatchEndTime(userMatch.id);
-        await storage.updateActiveUserMatchStatus(otherUserId, false);
-        log(`Match ended due to disconnect: ${userMatch.id}`, "websocket");
+        // Remove from active users
+        await storage.removeActiveUser(wsWithId.id);
+      } catch (error) {
+        console.error(`Error handling disconnect for user ${wsWithId.id}:`, error);
       }
-      
-      // Remove from active users
-      await storage.removeActiveUser(wsWithId.id);
     });
   });
   
-  // API endpoint to create and get Daily.co room
-  app.post("/api/room", async (req: Request, res: Response) => {
+  // WebRTC signaling for direct browser-to-browser voice calls
+  app.post("/api/webrtc-signal", async (req: Request, res: Response) => {
     try {
       // Validate request body
       const schema = z.object({
         roomName: z.string(),
+        signal: z.any(),
+        fromUser: z.string(),
+        toUser: z.string().optional(),
       });
       
-      const { roomName } = schema.parse(req.body);
-      log(`Creating Daily.co room: ${roomName}`, "api");
+      const { roomName, signal, fromUser, toUser } = schema.parse(req.body);
+      log(`Received WebRTC signal in room ${roomName}`, "api");
       
-      const DAILY_API_KEY = process.env.DAILY_API_KEY;
-      
-      if (!DAILY_API_KEY) {
-        throw new Error("Daily API key is not configured");
-      }
-      
-      // Create a room using Daily.co API
-      const createRoomResponse = await fetch('https://api.daily.co/v1/rooms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DAILY_API_KEY}`
-        },
-        body: JSON.stringify({
-          name: roomName,
-          properties: {
-            enable_prejoin_ui: false,
-            enable_screenshare: false,
-            enable_chat: false,
-            start_video_off: true,
-          }
-        })
-      });
-      
-      if (!createRoomResponse.ok) {
-        const errorText = await createRoomResponse.text();
-        log(`Daily API error: ${errorText}`, "api");
+      // If a specific target user is provided, send only to them
+      if (toUser) {
+        const clients = Array.from(wss.clients) as WebSocketWithId[];
+        const targetClient = clients.find(client => client.id === toUser);
         
-        // If room already exists, we'll just use it
-        if (createRoomResponse.status === 409) {
-          const dailyUrl = `https://whisper.daily.co/${roomName}`;
-          
-          // Create a meeting token for the room
-          const createTokenResponse = await fetch('https://api.daily.co/v1/meeting-tokens', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${DAILY_API_KEY}`
-            },
-            body: JSON.stringify({
-              properties: {
-                room_name: roomName,
-                enable_screenshare: false,
-                enable_chat: false,
-                start_video_off: true,
-              }
-            })
-          });
-          
-          if (!createTokenResponse.ok) {
-            throw new Error(`Failed to create token: ${await createTokenResponse.text()}`);
-          }
-          
-          const tokenData = await createTokenResponse.json();
-          
-          res.json({
+        if (targetClient && targetClient.readyState === WebSocket.OPEN) {
+          targetClient.send(JSON.stringify({
+            type: "webrtc-signal",
             roomName,
-            url: dailyUrl,
-            token: tokenData.token,
-          });
-          
-          log(`Using existing room: ${roomName}`, "api");
-          return;
+            signal,
+            fromUser
+          }));
+          log(`Sent WebRTC signal to specific user ${toUser}`, "api");
+        } else {
+          log(`Target user ${toUser} not found or connection not open`, "api");
+        }
+      } else {
+        // Otherwise, broadcast to all users in the room (except sender)
+        const match = await storage.getMatchByUserSocketId(fromUser);
+        
+        if (!match) {
+          log(`No match found for user ${fromUser}`, "api");
+          return res.status(404).json({ error: "No active match found" });
         }
         
-        throw new Error(`Failed to create room: ${errorText}`);
+        // Get other user ID
+        const otherUserId = match.user1Id === fromUser ? match.user2Id : match.user1Id;
+        
+        // Find websocket for other user
+        const clients = Array.from(wss.clients) as WebSocketWithId[];
+        const otherUserWs = clients.find(client => client.id === otherUserId);
+        
+        if (otherUserWs && otherUserWs.readyState === WebSocket.OPEN) {
+          otherUserWs.send(JSON.stringify({
+            type: "webrtc-signal",
+            roomName,
+            signal,
+            fromUser
+          }));
+          log(`Sent WebRTC signal to matching user ${otherUserId}`, "api");
+        } else {
+          log(`Other user ${otherUserId} not found or connection not open`, "api");
+        }
       }
       
-      const roomData = await createRoomResponse.json();
-      
-      // Create a meeting token for the room
-      const createTokenResponse = await fetch('https://api.daily.co/v1/meeting-tokens', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DAILY_API_KEY}`
-        },
-        body: JSON.stringify({
-          properties: {
-            room_name: roomName,
-            enable_screenshare: false,
-            enable_chat: false,
-            start_video_off: true,
-          }
-        })
-      });
-      
-      if (!createTokenResponse.ok) {
-        throw new Error(`Failed to create token: ${await createTokenResponse.text()}`);
-      }
-      
-      const tokenData = await createTokenResponse.json();
-      
-      res.json({
-        roomName,
-        url: roomData.url,
-        token: tokenData.token,
-      });
-      
-      log(`Room created successfully: ${roomName}`, "api");
+      res.json({ success: true });
     } catch (error) {
-      console.error("Error creating room:", error);
-      res.status(500).json({ error: "Failed to create room" });
+      console.error("Error handling WebRTC signal:", error);
+      res.status(500).json({ error: "Failed to process WebRTC signal" });
     }
   });
   

@@ -38,6 +38,16 @@ export async function initializeCall(roomName: string) {
     
   } catch (error) {
     console.error('Error initializing Daily.co call:', error);
+    
+    // Check if this is an API key error
+    if (error instanceof Error) {
+      if (error.message.includes('API key') || 
+          error.message.includes('401') || 
+          error.message.includes('500')) {
+        throw new Error('Voice call service needs configuration (API key issue)');
+      }
+    }
+    
     throw error;
   }
 }

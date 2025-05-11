@@ -2,8 +2,28 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = '';
+    
+    try {
+      // Try to parse as JSON first
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await res.clone().json();
+        errorMessage = errorData.error || JSON.stringify(errorData);
+      } else {
+        // Fallback to text
+        errorMessage = await res.text();
+      }
+    } catch (e) {
+      // If parsing fails, use statusText as fallback
+      errorMessage = res.statusText;
+    }
+    
+    if (res.status === 500 && (errorMessage.includes('Daily') || errorMessage.includes('API key'))) {
+      throw new Error('Voice service configuration error: API key missing or invalid');
+    }
+    
+    throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
 

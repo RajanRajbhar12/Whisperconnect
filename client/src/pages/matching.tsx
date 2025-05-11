@@ -4,7 +4,6 @@ import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { useMatching } from "@/hooks/use-matching";
 import { Mood, MoodEnum } from "@shared/schema";
-import { motion } from "framer-motion";
 
 // Get color for each mood
 const getMoodColor = (mood: Mood) => {
@@ -85,34 +84,14 @@ const MatchingScreen = () => {
         </div>
         
         <div className="container mx-auto max-w-md text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="glass-card p-12 rounded-3xl"
-          >
-            {/* Pulsating avatar */}
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.05, 1],
-                boxShadow: [
-                  "0 0 0 0 rgba(255, 255, 255, 0.4)",
-                  "0 0 0 15px rgba(255, 255, 255, 0)",
-                  "0 0 0 0 rgba(255, 255, 255, 0)"
-                ]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                repeatType: "loop"
-              }}
-              className="mx-auto mb-10 relative"
-            >
+          <div className="glass-card p-12 rounded-3xl">
+            {/* Mood avatar */}
+            <div className="mx-auto mb-10 relative">
               <div className={`w-24 h-24 rounded-full flex items-center justify-center bg-gradient-to-r ${moodColor} text-5xl`}>
                 {moodEmoji}
               </div>
               <div className="absolute -inset-3 border-2 border-dashed border-white/30 rounded-full"></div>
-            </motion.div>
+            </div>
             
             <h2 className="text-2xl md:text-3xl font-medium mb-6">
               Finding someone who feels{" "}
@@ -121,22 +100,13 @@ const MatchingScreen = () => {
               </span>
             </h2>
             
-            {/* Animated pulse dots */}
+            {/* Simple pulse dots */}
             <div className="flex justify-center space-x-3 mb-10">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [0, 1, 0] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    delay: i * 0.2,
-                    ease: "easeInOut"
-                  }}
-                  className={`w-3 h-3 rounded-full bg-gradient-to-r ${moodColor}`}
-                />
-              ))}
+              <div className="w-3 h-3 rounded-full bg-[hsl(var(--whisper-pink))] animate-pulse"></div>
+              <div className="w-3 h-3 rounded-full bg-[hsl(var(--whisper-pink))] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+              <div className="w-3 h-3 rounded-full bg-[hsl(var(--whisper-pink))] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+              <div className="w-3 h-3 rounded-full bg-[hsl(var(--whisper-pink))] animate-pulse" style={{ animationDelay: "0.6s" }}></div>
+              <div className="w-3 h-3 rounded-full bg-[hsl(var(--whisper-pink))] animate-pulse" style={{ animationDelay: "0.8s" }}></div>
             </div>
             
             <p className="text-[hsl(var(--foreground))]/70 mb-8">
@@ -150,7 +120,7 @@ const MatchingScreen = () => {
             >
               Cancel
             </Button>
-          </motion.div>
+          </div>
         </div>
       </main>
     </>

@@ -1,14 +1,8 @@
 import { Link } from "wouter";
-import { motion } from "framer-motion";
 
 const Header = () => {
   return (
-    <motion.header 
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="py-6 px-4 sm:px-6 relative z-10"
-    >
+    <header className="py-6 px-4 sm:px-6 relative z-10">
       <div className="container mx-auto flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold flex items-center">
           <span className="inline-block mr-2 h-10 w-10 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center border border-white/50">
@@ -37,7 +31,7 @@ const Header = () => {
           </ul>
         </nav>
       </div>
-    </motion.header>
+    </header>
   );
 };
 

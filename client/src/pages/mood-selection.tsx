@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Mood, MoodEnum } from "@shared/schema";
-import { motion } from "framer-motion";
 
 type MoodOption = {
   value: Mood;
@@ -56,22 +55,6 @@ const MoodSelection = () => {
   const selectMood = (mood: Mood) => {
     navigate(`/matching/${mood}`);
   };
-  
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
 
   return (
     <>
@@ -83,34 +66,20 @@ const MoodSelection = () => {
         <div className="absolute -z-10 bottom-1/3 right-1/4 w-64 h-64 rounded-full bg-[hsl(var(--whisper-blue))]/10 blur-3xl"></div>
         
         <div className="container mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div>
             <div className="glass-card inline-block px-6 py-3 mb-12">
               <h2 className="text-2xl md:text-3xl font-medium bg-gradient-to-r from-[hsl(var(--whisper-purple))] to-[hsl(var(--whisper-pink))] text-transparent bg-clip-text">
                 How are you feeling today?
               </h2>
             </div>
-          </motion.div>
+          </div>
           
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
             {moodOptions.map((mood, index) => (
-              <motion.div 
+              <div 
                 key={index}
                 className={`mood-option ${mood.value === "lonely" ? "md:col-span-1 col-span-2" : ""}`}
                 onClick={() => selectMood(mood.value)}
-                variants={item}
-                whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-                }}
               >
                 <div className={`emoji ${mood.bgColor} w-16 h-16 rounded-full flex items-center justify-center mx-auto`}>
                   {mood.emoji}
@@ -118,15 +87,11 @@ const MoodSelection = () => {
                 <div className={`font-medium mt-4 text-lg bg-gradient-to-r ${mood.color} text-transparent bg-clip-text`}>
                   {mood.label}
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
           
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
+          <div>
             <Link href="/">
               <Button 
                 variant="outline" 
@@ -135,7 +100,7 @@ const MoodSelection = () => {
                 ← Go back
               </Button>
             </Link>
-          </motion.div>
+          </div>
         </div>
       </main>
     </>

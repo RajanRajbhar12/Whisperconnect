@@ -1,5 +1,3 @@
-import { motion } from "framer-motion";
-
 const Footer = () => {
   return (
     <footer className="py-12 px-4 relative overflow-hidden">
@@ -7,13 +5,7 @@ const Footer = () => {
       <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-[hsl(var(--whisper-purple))]/5 to-transparent"></div>
       
       <div className="container mx-auto max-w-4xl relative z-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="glass-card p-8 text-center"
-        >
+        <div className="glass-card p-8 text-center">
           <div className="flex justify-center mb-6">
             <div className="w-12 h-1 bg-gradient-to-r from-[hsl(var(--whisper-purple))] to-[hsl(var(--whisper-pink))] rounded-full"></div>
           </div>
@@ -47,7 +39,7 @@ const Footer = () => {
           <p className="text-[hsl(var(--foreground))]/50 text-sm">
             &copy; {new Date().getFullYear()} Whisper. All rights reserved.
           </p>
-        </motion.div>
+        </div>
       </div>
       
       {/* Decorative blobs */}

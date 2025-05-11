@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 4%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+
+    --primary: 210 90% 54%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --accent: 351 94% 86%;
+    --accent-foreground: 351 88% 16%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --ring: 240 5% 64.9%;
+
+    --radius: 0.5rem;
+    
+    /* Whisper specific colors */
+    --whisper-blue: 210 50% 55%;
+    --whisper-pink: 351 80% 85%;
+    --whisper-beige: 27 50% 96%;
+    --whisper-charcoal: 0 0% 26%;
+    --whisper-gray: 0 0% 92%; 
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+
+    --primary: 210 90% 54%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --accent: 351 94% 86%;
+    --accent-foreground: 351 88% 16%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-[#F9F4EF] text-[#424242];
+  }
+}
+
+.transition-fade {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mood-option {
+  @apply bg-white rounded-2xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:bg-[#EAEAEA]/30 hover:-translate-y-1 hover:shadow-lg;
+}
+
+.audio-visualizer-bar {
+  @apply h-8 w-1 bg-white/90 rounded animate-pulse;
+}

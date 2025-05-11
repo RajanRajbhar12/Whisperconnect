@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // API endpoint to get Daily.co room
+  // API endpoint to create and get Daily.co room
   app.post("/api/room", async (req: Request, res: Response) => {
     try {
       // Validate request body
@@ -176,24 +176,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const { roomName } = schema.parse(req.body);
-      log(`Creating room: ${roomName}`, "api");
+      log(`Creating Daily.co room: ${roomName}`, "api");
       
-      // For demo implementation: use a fixed URL pattern
-      // In production, you would create an actual Daily.co room with their API
-      // and return a proper token
+      const DAILY_API_KEY = process.env.DAILY_API_KEY;
       
-      const dailyUrl = `https://whisper.daily.co/${roomName}`;
+      if (!DAILY_API_KEY) {
+        throw new Error("Daily API key is not configured");
+      }
+      
+      // Create a room using Daily.co API
+      const createRoomResponse = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DAILY_API_KEY}`
+        },
+        body: JSON.stringify({
+          name: roomName,
+          properties: {
+            enable_prejoin_ui: false,
+            enable_screenshare: false,
+            enable_chat: false,
+            start_video_off: true,
+          }
+        })
+      });
+      
+      if (!createRoomResponse.ok) {
+        const errorText = await createRoomResponse.text();
+        log(`Daily API error: ${errorText}`, "api");
+        
+        // If room already exists, we'll just use it
+        if (createRoomResponse.status === 409) {
+          const dailyUrl = `https://whisper.daily.co/${roomName}`;
+          
+          // Create a meeting token for the room
+          const createTokenResponse = await fetch('https://api.daily.co/v1/meeting-tokens', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${DAILY_API_KEY}`
+            },
+            body: JSON.stringify({
+              properties: {
+                room_name: roomName,
+                enable_screenshare: false,
+                enable_chat: false,
+                start_video_off: true,
+              }
+            })
+          });
+          
+          if (!createTokenResponse.ok) {
+            throw new Error(`Failed to create token: ${await createTokenResponse.text()}`);
+          }
+          
+          const tokenData = await createTokenResponse.json();
+          
+          res.json({
+            roomName,
+            url: dailyUrl,
+            token: tokenData.token,
+          });
+          
+          log(`Using existing room: ${roomName}`, "api");
+          return;
+        }
+        
+        throw new Error(`Failed to create room: ${errorText}`);
+      }
+      
+      const roomData = await createRoomResponse.json();
+      
+      // Create a meeting token for the room
+      const createTokenResponse = await fetch('https://api.daily.co/v1/meeting-tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DAILY_API_KEY}`
+        },
+        body: JSON.stringify({
+          properties: {
+            room_name: roomName,
+            enable_screenshare: false,
+            enable_chat: false,
+            start_video_off: true,
+          }
+        })
+      });
+      
+      if (!createTokenResponse.ok) {
+        throw new Error(`Failed to create token: ${await createTokenResponse.text()}`);
+      }
+      
+      const tokenData = await createTokenResponse.json();
       
       res.json({
         roomName,
-        url: dailyUrl,
-        token: "demo-token", // In production, generate a real token
+        url: roomData.url,
+        token: tokenData.token,
       });
       
-      log(`Room created: ${roomName}`, "api");
+      log(`Room created successfully: ${roomName}`, "api");
     } catch (error) {
       console.error("Error creating room:", error);
-      res.status(400).json({ error: "Invalid request" });
+      res.status(500).json({ error: "Failed to create room" });
     }
   });
   

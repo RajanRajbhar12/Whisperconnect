@@ -4,37 +4,83 @@ import Footer from "@/components/footer";
 import AboutSection from "@/components/about-section";
 import FAQSection from "@/components/faq-section";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 const Home = () => {
   return (
     <>
       <Header />
       <main className="flex-grow flex flex-col">
-        <section className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-16">
-          <div className="container mx-auto max-w-4xl text-center">
-            {/* Serene landscape with soft colors */}
-            <div 
-              className="bg-cover bg-center rounded-xl mb-8 h-64 md:h-80 shadow-lg" 
-              style={{ 
-                backgroundImage: "url('https://images.unsplash.com/photo-1439853949127-fa647821eba0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=1080')" 
-              }}
-            ></div>
+        <section className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-20 relative overflow-hidden">
+          {/* Decorative blobs */}
+          <div className="absolute left-0 top-20 w-64 h-64 rounded-full bg-[hsl(var(--whisper-pink))] opacity-20 blur-3xl"></div>
+          <div className="absolute right-0 bottom-20 w-80 h-80 rounded-full bg-[hsl(var(--whisper-blue))] opacity-20 blur-3xl"></div>
+          
+          <div className="container mx-auto max-w-5xl text-center z-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-8"
+            >
+              <div className="inline-flex items-center justify-center p-3 bg-white/30 backdrop-blur-md rounded-full mb-6 border border-white/50">
+                <span className="text-2xl mr-3">🌿</span>
+                <span className="text-sm font-medium bg-gradient-to-r from-[hsl(var(--whisper-purple))] to-[hsl(var(--whisper-pink))] text-transparent bg-clip-text">Just launched</span>
+              </div>
+            </motion.div>
             
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-light mb-4 text-[#424242]">
-              Feeling lonely? Just <span className="text-[hsl(var(--whisper-blue))] font-medium">whisper</span>.
-            </h1>
+            {/* Hero image in a modern style */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="glass-card mb-12 p-2 mx-auto max-w-3xl overflow-hidden"
+            >
+              <div 
+                className="bg-cover bg-center rounded-2xl h-72 md:h-96 w-full transform transition-all hover:scale-105 duration-1000 ease-out" 
+                style={{ 
+                  backgroundImage: "url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=1080')" 
+                }}
+              ></div>
+            </motion.div>
             
-            <p className="text-lg md:text-xl text-[#424242]/80 mb-10 max-w-2xl mx-auto">
-              Get instantly connected to someone who feels the same. Not a date. Not a profile. Just a voice when you need one.
-            </p>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-[hsl(var(--whisper-purple))] via-[hsl(var(--primary))] to-[hsl(var(--whisper-pink))] text-transparent bg-clip-text"
+            >
+              Feeling lonely? Just whisper.
+            </motion.h1>
             
-            <Link href="/mood">
-              <Button 
-                className="bg-[hsl(var(--whisper-blue))] text-white font-medium px-10 py-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-lg"
-              >
-                Start Whispering
-              </Button>
-            </Link>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="text-lg md:text-xl text-[hsl(var(--foreground))]/80 mb-10 max-w-2xl mx-auto"
+            >
+              Get instantly connected to someone who feels the same way you do. 
+              <span className="block mt-2 font-light text-[hsl(var(--foreground))]/70">Not a date. Not a profile. Just a voice when you need one.</span>
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+            >
+              <Link href="/mood">
+                <Button 
+                  className="gradient-btn text-white font-medium px-10 py-6 rounded-full shadow-lg hover:shadow-xl transition-all text-lg"
+                >
+                  Start Whispering
+                </Button>
+              </Link>
+              
+              <div className="mt-8 text-sm text-[hsl(var(--foreground))]/60 flex items-center justify-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+                <span>100+ people online now</span>
+              </div>
+            </motion.div>
           </div>
         </section>
 

@@ -4,74 +4,76 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    --background: 264 30% 98%;
+    --foreground: 264 10% 20%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 264 20% 95%;
+    --muted-foreground: 264 10% 50%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 264 30% 98%;
+    --popover-foreground: 264 10% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 264 30% 98%;
+    --card-foreground: 264 10% 20%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --border: 264 20% 90%;
+    --input: 264 20% 90%;
 
-    --primary: 210 90% 54%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 264 80% 60%;
+    --primary-foreground: 264 40% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 190 80% 50%;
+    --secondary-foreground: 190 40% 98%;
 
-    --accent: 351 94% 86%;
-    --accent-foreground: 351 88% 16%;
+    --accent: 330 80% 65%;
+    --accent-foreground: 330 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 240 5% 64.9%;
+    --ring: 264 20% 70%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
     
-    /* Whisper specific colors */
-    --whisper-blue: 210 50% 55%;
-    --whisper-pink: 351 80% 85%;
-    --whisper-beige: 27 50% 96%;
-    --whisper-charcoal: 0 0% 26%;
-    --whisper-gray: 0 0% 92%; 
+    /* Whisper specific colors - Gen Z inspired */
+    --whisper-purple: 264 80% 60%;
+    --whisper-blue: 190 80% 50%;
+    --whisper-pink: 330 80% 65%;
+    --whisper-mint: 160 70% 87%;
+    --whisper-peach: 30 100% 85%;
+    --whisper-lavender: 270 70% 90%;
+    --whisper-charcoal: 264 10% 20%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 264 20% 12%;
+    --foreground: 264 10% 98%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 264 20% 20%;
+    --muted-foreground: 264 10% 70%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 264 20% 12%;
+    --popover-foreground: 264 10% 98%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 264 20% 12%;
+    --card-foreground: 264 10% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 264 20% 25%;
+    --input: 264 20% 25%;
 
-    --primary: 210 90% 54%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 264 80% 60%;
+    --primary-foreground: 264 40% 98%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 190 80% 50%;
+    --secondary-foreground: 190 40% 98%;
 
-    --accent: 351 94% 86%;
-    --accent-foreground: 351 88% 16%;
+    --accent: 330 80% 65%;
+    --accent-foreground: 330 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 240 4.9% 83.9%;
+    --ring: 264 20% 70%;
   }
 }
 
@@ -81,7 +83,8 @@
   }
 
   body {
-    @apply font-sans antialiased bg-[#F9F4EF] text-[#424242];
+    @apply font-sans antialiased bg-gradient-to-br from-[hsl(var(--whisper-lavender))] via-[hsl(var(--background))] to-[hsl(var(--whisper-mint))] text-[hsl(var(--foreground))];
+    min-height: 100vh;
   }
 }
 
@@ -90,9 +93,62 @@
 }
 
 .mood-option {
-  @apply bg-white rounded-2xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:bg-[#EAEAEA]/30 hover:-translate-y-1 hover:shadow-lg;
+  @apply bg-white/80 backdrop-blur-sm rounded-3xl shadow-md p-6 cursor-pointer transition-all duration-300 border border-white/50 hover:scale-105 hover:shadow-lg hover:bg-white/90;
+}
+
+.mood-option:hover .emoji {
+  @apply scale-125 transition-all;
+}
+
+.emoji {
+  @apply transition-all text-5xl mb-4 inline-block;
 }
 
 .audio-visualizer-bar {
-  @apply h-8 w-1 bg-white/90 rounded animate-pulse;
+  @apply h-8 w-1 bg-white/90 rounded-full animate-pulse;
+}
+
+.gradient-btn {
+  @apply relative overflow-hidden transition-all duration-300;
+  background: linear-gradient(90deg, hsl(var(--whisper-purple)), hsl(var(--whisper-blue)));
+  z-index: 1;
+}
+
+.gradient-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, hsl(var(--whisper-pink)), hsl(var(--whisper-purple)));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.gradient-btn:hover:before {
+  opacity: 1;
+}
+
+.glass-card {
+  @apply bg-white/30 backdrop-blur-md rounded-3xl shadow-xl border border-white/50;
+}
+
+.section-wave {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-wave:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,128L48,149.3C96,171,192,213,288,229.3C384,245,480,235,576,224C672,213,768,203,864,176C960,149,1056,107,1152,101.3C1248,96,1344,128,1392,144L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
 }

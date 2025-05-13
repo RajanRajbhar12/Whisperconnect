@@ -3,33 +3,6 @@ import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
-const teamMembers = [
-  {
-    name: "Alex Johnson",
-    role: "CEO & Co-Founder",
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-    quote: "We created Whisper to bring back the human connection that's missing from today's digital world."
-  },
-  {
-    name: "Jamie Chen",
-    role: "CTO & Co-Founder",
-    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-    quote: "Technology should enhance human connection, not replace it."
-  },
-  {
-    name: "Taylor Williams",
-    role: "Head of Product",
-    photo: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-    quote: "Every feature we build is designed to foster genuine connection between people."
-  },
-  {
-    name: "Jordan Rivera",
-    role: "Head of Community",
-    photo: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-    quote: "The Whisper community is built on empathy, understanding, and respect."
-  }
-];
-
 const values = [
   {
     title: "Authentic Connection",
@@ -53,33 +26,6 @@ const values = [
   }
 ];
 
-const milestones = [
-  {
-    year: "2021",
-    title: "The Beginning",
-    description: "Whisper was born from a simple idea: what if we could connect people through voice alone?"
-  },
-  {
-    year: "2022",
-    title: "Launch & Growth",
-    description: "We launched our beta and grew to 100,000 users in just three months."
-  },
-  {
-    year: "2023",
-    title: "Series A Funding",
-    description: "Raised $15M to expand our team and develop new features for our growing community."
-  },
-  {
-    year: "2024",
-    title: "Global Expansion",
-    description: "Expanded to 50 countries and crossed 5 million active users worldwide."
-  },
-  {
-    year: "2025",
-    title: "The Future",
-    description: "Building the next generation of human connection technology. Stay tuned!"
-  }
-];
 
 const AboutPage = () => {
   return (

@@ -14,84 +14,94 @@ export function useMatching() {
   useEffect(() => {
     // Function to set up WebSocket
     const setupWebSocket = () => {
-      // Get the host from the current location
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      // Connect to our specific WebSocket path
-      const socket = new WebSocket(`${wsProtocol}//${host}/ws`);
-      
-      socketRef.current = socket;
-      
-      socket.addEventListener('open', () => {
-        console.log('WebSocket connection established');
-        setConnectionStatus('connecting');
-      });
-      
-      socket.addEventListener('message', (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('WebSocket message received:', data);
-          
-          switch (data.type) {
-            case 'connection':
-              setSocketId(data.socketId);
-              // Store socket ID in session storage for WebRTC
-              sessionStorage.setItem('socketId', data.socketId);
-              break;
-              
-            case 'waiting':
-              setConnectionStatus('waiting');
-              setSelectedMood(data.mood as Mood);
-              break;
-              
-            case 'matched':
-              setConnectionStatus('matched');
-              setRoomName(data.roomName);
-              // Store the other user's ID for WebRTC
-              sessionStorage.setItem('otherUserId', data.otherUserId);
-              break;
-              
-            case 'webrtc-signal':
-              // Handle WebRTC signaling
-              const rtcSignalEvent = new CustomEvent('webrtc-signal', { 
-                detail: { 
-                  signal: data.signal,
-                  fromUser: data.fromUser
-                } 
-              });
-              window.dispatchEvent(rtcSignalEvent);
-              break;
-              
-            case 'callEnded':
-              // The other person ended the call
-              window.location.href = '/';
-              break;
-              
-            case 'error':
-              console.error('Server error:', data.message);
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      });
-      
-      socket.addEventListener('close', (event) => {
-        console.log('WebSocket connection closed with code:', event.code);
-        setConnectionStatus('disconnected');
-        socketRef.current = null;
+      try {
+        // Get the host from the current location
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port ? `:${window.location.port}` : '';
+        // Connect to our specific WebSocket path
+        const wsUrl = `${wsProtocol}//${host}${port}/ws`;
         
-        // Attempt to reconnect after a delay, unless this was an intentional close
-        if (event.code !== 1000) {
-          console.log('Attempting to reconnect...');
-          setTimeout(setupWebSocket, 2000);
-        }
-      });
-      
-      socket.addEventListener('error', (error) => {
-        console.error('WebSocket error:', error);
-        // Don't set disconnected here, the close event will fire after this
-      });
+        console.log('Attempting WebSocket connection to:', wsUrl);
+        const socket = new WebSocket(wsUrl);
+        
+        socketRef.current = socket;
+        
+        socket.addEventListener('open', () => {
+          console.log('WebSocket connection established');
+          setConnectionStatus('connecting');
+        });
+        
+        socket.addEventListener('message', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('WebSocket message received:', data);
+            
+            switch (data.type) {
+              case 'connection':
+                setSocketId(data.socketId);
+                // Store socket ID in session storage for WebRTC
+                sessionStorage.setItem('socketId', data.socketId);
+                break;
+                
+              case 'waiting':
+                setConnectionStatus('waiting');
+                setSelectedMood(data.mood as Mood);
+                break;
+                
+              case 'matched':
+                setConnectionStatus('matched');
+                setRoomName(data.roomName);
+                // Store the other user's ID for WebRTC
+                sessionStorage.setItem('otherUserId', data.otherUserId);
+                break;
+                
+              case 'webrtc-signal':
+                // Handle WebRTC signaling
+                const rtcSignalEvent = new CustomEvent('webrtc-signal', { 
+                  detail: { 
+                    signal: data.signal,
+                    fromUser: data.fromUser
+                  } 
+                });
+                window.dispatchEvent(rtcSignalEvent);
+                break;
+                
+              case 'callEnded':
+                // The other person ended the call
+                window.location.href = '/';
+                break;
+                
+              case 'error':
+                console.error('Server error:', data.message);
+                break;
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        });
+        
+        socket.addEventListener('close', (event) => {
+          console.log('WebSocket connection closed with code:', event.code);
+          setConnectionStatus('disconnected');
+          socketRef.current = null;
+          
+          // Attempt to reconnect after a delay, unless this was an intentional close
+          if (event.code !== 1000) {
+            console.log('Attempting to reconnect...');
+            setTimeout(setupWebSocket, 2000);
+          }
+        });
+        
+        socket.addEventListener('error', (error) => {
+          console.error('WebSocket error:', error);
+          // Don't set disconnected here, the close event will fire after this
+        });
+      } catch (error) {
+        console.error('Error setting up WebSocket:', error);
+        // If there's an error in setup, try again after a delay
+        setTimeout(setupWebSocket, 2000);
+      }
     };
     
     // Create WebSocket connection only once

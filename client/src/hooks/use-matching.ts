@@ -15,12 +15,11 @@ export function useMatching() {
     // Function to set up WebSocket
     const setupWebSocket = () => {
       try {
-        // Get the host from the current location
+        // Get the host and port from the current location
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const port = window.location.port ? `:${window.location.port}` : '';
+        const wsHost = window.location.host; // This includes both hostname and port
         // Connect to our specific WebSocket path
-        const wsUrl = `${wsProtocol}//${host}${port}/ws`;
+        const wsUrl = `${wsProtocol}//${wsHost}/ws`;
         
         console.log('Attempting WebSocket connection to:', wsUrl);
         const socket = new WebSocket(wsUrl);

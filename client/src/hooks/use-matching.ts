@@ -18,8 +18,9 @@ export function useMatching() {
         // Get the host and port from the current location
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
-        const port = window.location.port || '5000'; // Default to 5000 if port is not specified
-        const wsUrl = `${wsProtocol}//${host}:${port}/ws`;
+        const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+        const port = isLocalhost ? ':5000' : ''; // Only use port in local dev
+        const wsUrl = `${wsProtocol}//${host}${port}/ws`;
         
         console.log('Attempting WebSocket connection to:', wsUrl);
         const socket = new WebSocket(wsUrl);

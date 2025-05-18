@@ -268,7 +268,7 @@ const MatchingScreen = () => {
               transition={{ delay: 0.8 }}
             >
               <Button
-                onClick={cancelMatching}
+                onClick={handleCancel}
                 className="w-full md:w-auto px-12 py-6 text-lg bg-[#FF9E64]/10 hover:bg-[#FF9E64]/20 text-[#FF9E64] border border-[#FF9E64]/20 rounded-xl transition-all duration-300"
               >
                 Cancel
